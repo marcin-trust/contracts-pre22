@@ -129,6 +129,18 @@ describe('StakingVault', () => {
       expect(await creditAgency.creditScore(pool.address, borrower.address)).to.eq(235)
     })
 
+    it('allows to flash stake-unstake to influence credit score', async () => {
+      await creditOracle.setScore(borrower.address, 223)
+      await creditAgency.connect(borrower).borrow(pool.address, parseEth(25))
+      const bigTruAmount = parseTRU(1_000_000)
+      await tru.mint(borrower.address, bigTruAmount)
+      await tru.connect(borrower).approve(stakingVault.address, bigTruAmount)
+      await stakingVault.connect(borrower).stake(bigTruAmount)
+      expect(await creditAgency.creditScore(pool.address, borrower.address)).to.eq(255)
+      await stakingVault.connect(borrower).unstake(bigTruAmount)
+      expect(await creditAgency.creditScore(pool.address, borrower.address)).to.eq(223)
+    })
+
     it('emits event', async () => {
       await expect(stakingVault.connect(borrower).stake(parseTRU(100)))
         .to.emit(stakingVault, 'Staked')
